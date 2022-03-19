@@ -53,10 +53,10 @@ done
 }
 
 clear_on_error() {
-if [ -d "$tmp_dir"]; then
+if [ -d "$tmp_dir" ]; then
 	sudo rm -r $tmp_dir
 fi
-if [ -d "$mount_point"]; then
+if [ -d "$mount_point" ]; then
 	sudo rm -r $mount_point
 fi
 }
