@@ -128,7 +128,7 @@ check_required_arguments 'exclude' $exclude_from
 # check if hard disk is a valid mount point
 is_valid_device $device
 
-printf "Backup start!\n"
+sudo printf "Backup start!\n"
 
 # ok now create mount point and mount the device
 sudo mkdir -p $mount_point
