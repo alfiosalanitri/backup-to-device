@@ -1,0 +1,2 @@
+/home/your-username/Documents
+/home/your-username/Pictures
