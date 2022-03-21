@@ -14,5 +14,13 @@ This script copy one or more directories listed into the include.txt file and cr
 - `cd /path/to/backup-to-device`
 - `./backup-to-device.sh --help`
 
+# TIPS
+## How to create a desktop icon application launcher?
+If you want launch the backup from GUI:
+- rename backup-to-device.desktop.example to backup-to-device.desktop
+- edit the file and change Exec line with your path and Icon Line
+- `sudo cp backup-to-device.desktop /usr/share/applications`
+- `sudo chown root:root /usr/share/applications`
+
 # AUTHOR: 
 backup-to-device.sh is written by Alfio Salanitri www.alfiosalanitri.it and are licensed under the MIT License.
