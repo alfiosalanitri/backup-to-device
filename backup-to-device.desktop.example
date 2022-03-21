@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Backup to device
+Comment=Save the backup to device
+Exec=bash -c '/path/to/backup-to-device.sh --destination /your-destination/ --include /your/include.txt --exclude /your/exclude.txt --config /your/.config;$SHELL'
+StartupNotify=true
+Icon=/path/to/backup-to-device/icon.png
+Terminal=true
+Type=Application
