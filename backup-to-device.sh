@@ -13,8 +13,7 @@
 
 # USAGE
 #- `cd /path/to/backup-to-device`
-#- `./backup-to-device.sh --device=/dev/sdb1 --destination=/directory/inside/usb-device --include=/path/to/backup-to-device/include.txt --exclude=/path/to/backup-to-device/exclude.txt --db-config=/path/to/backup-mysql-script/.config`
-#- N.B. --db-config is optional
+#- `./backup-to-device.sh --help`
 
 # AUTHOR: 
 #backup-to-device.sh is written by Alfio Salanitri www.alfiosalanitri.it and are licensed under the MIT License.
@@ -25,17 +24,23 @@
 now=$(date +%d%m%Y-%H%M)
 tmp_dir=/tmp/backup-to-device
 tmp_files_dir="$tmp_dir/files"
-mount_point=/media/backup-to-device
 backup_mysql=/usr/local/bin/backup-mysql
-
 #############################################################
 # Functions
 #############################################################
 display_help() {
 cat << EOF
--------------
-Script Usage:
-$(basename $0) [-h] [--device=/dev/sdb1] [--destination=/directory/inside/usb-device] [-include=/file/with/dir/to-backup] [--exclude=/file/with/dir/to-exclude] [-db-config=/path/to/backup-mysql/config-file (required only if backup-mysql script exists)]
+Copyright (C) 2022 by Alfio Salanitri
+Website: https://github.com/alfiosalanitri/backup-to-device
+
+Usage: $(basename $0) -d PATH -i FILE -e FILE -c FILE (optional)
+
+Options
+-d, --destination         mounted device directory where the backup will be saved
+-i, --include             file with directories to backup (one directory for line)
+-e, --exclude             file with directories to exclude from backup
+-c, --config              config file for https://github.com/alfiosalanitri/backup-mysql/ script (OPTIONAL)
+-h, --help                show this help
 -------------
 EOF
 }
@@ -52,36 +57,28 @@ do
 done
 }
 
-clear_on_error() {
+clean_tmp() {
 if [ -d "$tmp_dir" ]; then
 	sudo rm -r $tmp_dir
-fi
-if [ -d "$mount_point" ]; then
-	sudo rm -r $mount_point
 fi
 }
 
 check_required_arguments() {
 if [ "" == "$2" ]; then
-  clear_on_error
-  printf "[!] --$1= arguments is required.\n\n"
+  clean_tmp
+  echo ""
+  echo "-----------------------------------"
+  printf "[!] $1 is required.\n"
+  echo "-----------------------------------"
+  echo ""
   display_help
-  exit 1
-fi
-}
-
-is_valid_device() {
-check_device=$(ls -l /dev/disk/by-path/ | grep usb | grep $(basename $1))
-if [ "" == "$check_device" ]; then
-  clear_on_error
-  printf "[!] -Sorry but $1 isn't a valid usb device.\n\n"
   exit 1
 fi
 }
 
 check_file() {
 if [ ! -f "$1" ]; then
-  clear_on_error
+  clean_tmp
   printf "[!] The file $1 doesn't exists.\n\n"
   exit 1
 fi
@@ -92,64 +89,37 @@ if ! command -v $1 &> /dev/null; then
 	exit 1;
 fi
 }
+
 #############################################################
 # Get options
 #############################################################
-while getopts 'h-:' option; do
-	case "${option}"
-		in
-		h)
-			display_help
-			exit 1
-			;;			
-		-)
-  			case ${OPTARG} in
-  				"device"=*) device=$(echo ${OPTARG} | sed -e 's/device=//g');;
-  				"destination"=*) destination=$(echo ${OPTARG} | sed -e 's/destination=//g');;
-  				"include"=*) include_from=$(echo ${OPTARG} | sed -e 's/include=//g');;
-  				"exclude"=*) exclude_from=$(echo ${OPTARG} | sed -e 's/exclude=//g');;
-  				"db-config"=*) db_config=$(echo ${OPTARG} | sed -e 's/db-config=//g');;
-            esac
-			;;
+while [ $# -gt 0 ] ; do
+	case $1 in
+    -h | --help) display_help ;;
+    -d | --destination) destination=$2 ;;
+    -i | --include) include_from=$2 ;;
+    -e | --exclude) exclude_from=$2 ;;
+    -c | --config) db_config=$2 ;;
 	esac
+  shift
 done
-shift "$(($OPTIND -1))"
 
 # check required packages
 check_required_package rsync
 check_required_package tar
 
 # check required arguments
-check_required_arguments 'device' $device
 check_required_arguments 'destination' $destination
 check_required_arguments 'include' $include_from
 check_required_arguments 'exclude' $exclude_from
 
-# check if hard disk is a valid mount point
-is_valid_device $device
+# start
+sudo printf "Backup started!\n"
 
-sudo printf "Backup start!\n"
-
-# ok now create mount point and mount the device
-sudo mkdir -p $mount_point
-sudo mount $device $mount_point > /dev/null 2>&1 & pid=$!
-spinner "Device mounting..."
-printf "\n"
-mount_dir=$(lsblk -p | grep part | grep $device | awk '{print $7}')
-if [ "" == "$mount_dir" ]; then
-  clear_on_error
-  echo "[!] Device mount failed!"
-  exit 1
-fi
-printf "[+] Device mounted.\n\n"
-
-# remove final slash
-mount_dir=${mount_dir%/}
-
-# check if destination directory exists inside hard disk
-if [ ! -d "${mount_dir}${destination}" ]; then
-  echo "[!] ${mount_dir}${destination} directory not exists inside this device. Create it before or change destination."
-  clear_on_error
+# check if destination directory exists
+if [ ! -d "${destination}" ]; then
+  echo "[!] ${destination} directory not exists. Create it before or change destination."
+  clean_tmp
   exit 1
 fi
 
@@ -160,14 +130,14 @@ check_file $exclude_from
 # create tmp directory
 mkdir -p $tmp_files_dir
 
-# backup mysql databases if bash script exist
-if command -v $backup_mysql &>/dev/null; then
-  check_required_arguments 'db-config' $db_config
+# backup mysql databases if config file option and package exists.
+if [ "" != "$db_config" ]; then 
   check_file $db_config
+  check_required_package $backup_mysql
   $backup_mysql $db_config $tmp_files_dir > /dev/null 2>&1 & pid=$!
 	spinner "Backup mysql databases..."
   printf "\n[+] Backup mysql databases completed.\n\n"
-fi
+fi 
 
 # backup files
 rsync -zarhL --relative --stats --exclude-from="$exclude_from" --files-from="$include_from" / $tmp_files_dir > /dev/null 2>&1 & pid=$!
@@ -180,16 +150,23 @@ spinner "Compressing temporary directory..."
 sudo rm -r $tmp_files_dir
 printf "\n[+] Temporary directory compressed.\n\n"
 
-# copy tar archive to hard disk
-cp $tmp_dir/backup-pc* ${mount_dir}${destination} & pid=$!
-spinner "Copying backup file to device..."
-sudo rm -r $tmp_dir
-printf "\n[+] Backup file copied.\n\n"
+# check the device free space
+backup_size=$(du -s $tmp_dir | awk '{print $1}')
+destination_free_space=$(df ${destination} | awk '{print $4}' | tail -n +2)
+if [ "$backup_size" -gt "$destination_free_space" ]; then 
+  # Copy to user home
+  printf "[!] Not enough free space on $destination.\n\n"
+  cp $tmp_dir/backup-pc* /home/$USER & pid=$!
+  spinner "Copying backup file to /home/$USER..."
+  printf "\n[+] Backup file copied.\n\n"
+else
+  # copy tar archive to hard disk
+  cp $tmp_dir/backup-pc* ${destination} & pid=$!
+  spinner "Copying backup file to device..."
+  printf "\n[+] Backup file copied.\n\n"
+fi
 
-# unmount
-sudo umount $device & pid=$!
-spinner "Umounting device..."
-sudo rm -r $mount_point
-printf "\n[+] Device umounted.\n\n"
-printf "Backup end with success!\n\n"
+# End
+printf "Backup completed!\n\n"
+clean_tmp
 exit 1
