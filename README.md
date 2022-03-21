@@ -12,7 +12,7 @@ This script copy one or more directories listed into the include.txt file and cr
 
 # USAGE
 - `cd /path/to/backup-to-device`
-- `./backup-to-device.sh --helo`
+- `./backup-to-device.sh --help`
 
 # AUTHOR: 
 backup-to-device.sh is written by Alfio Salanitri www.alfiosalanitri.it and are licensed under the MIT License.
