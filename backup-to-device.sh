@@ -99,7 +99,7 @@ check_required_package() {
 
 # get estimated backup size before start
 backup_estimated_size() {
-  output=""
+  output="Calculating backup size..."
   total=0
   while read -r line; do
     size=$(sudo du -s $line | awk '{print $1}')
@@ -168,8 +168,9 @@ check_required_arguments 'exclude' $exclude_from
 
 # start
 start_script
-backup_estimated_size & pid=$!
-spinner "Calculating backup size..."
+
+# calculate backup total space and free disk space for temporary files.
+backup_estimated_size
 
 # check if destination directory exists
 if [ ! -d "${destination}" ]; then
