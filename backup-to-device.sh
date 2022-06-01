@@ -99,7 +99,7 @@ check_required_package() {
 
 # get estimated backup size before start
 backup_estimated_size() {
-  output="Calculating backup size..."
+  echo "Calculating backup size..."
   total=0
   while read -r line; do
     size=$(sudo du -s $line | awk '{print $1}')
