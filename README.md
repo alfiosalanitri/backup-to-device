@@ -1,5 +1,5 @@
 # NAME
-backup-to-device.sh - backup directories and mysql databases to external device.
+backup-to-device - backup directories and mysql databases to external device.
 
 # DESCRIPTION
 This script copy one or more directories listed into the include.txt file and create a tar archive. Then it copy the archive to external usb device. Supports directories exclusion listed into the exclude.txt file. Also it can backup all databases if https://github.com/alfiosalanitri/backup-mysql is installed.
@@ -12,7 +12,7 @@ This script copy one or more directories listed into the include.txt file and cr
 
 # USAGE
 - `cd /path/to/backup-to-device`
-- `./backup-to-device.sh --help`
+- `./backup-to-device --help`
 
 # TIPS
 ## How to create a desktop icon application launcher?
